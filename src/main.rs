@@ -1,5 +1,8 @@
 use macroquad::{
-  input::{KeyCode::Space, MouseButton::Left},
+  input::{
+    KeyCode::{D, Space, Up, W},
+    MouseButton::Left,
+  },
   prelude::*,
   rand::gen_range,
 };
@@ -110,7 +113,11 @@ impl Bird {
 
   // updates the velocity and position based on player input
   fn update(&mut self, dt: f32) -> bool {
-    if is_key_pressed(Space) || is_mouse_button_pressed(Left) {
+    if is_key_pressed(Space)
+      || is_mouse_button_pressed(Left)
+      || is_key_pressed(W)
+      || is_key_pressed(Up)
+    {
       self.vel_y = -BIRD_FLAP_FORCE;
     }
 
@@ -228,7 +235,7 @@ async fn main() {
             button_size.width + button_padding,
             button_size.height + button_padding,
           ),
-          font_size as u16
+          font_size as u16,
         ) {
           state = GameState::Playing;
         }
@@ -273,7 +280,7 @@ async fn main() {
             button_size.width + button_padding,
             button_size.height + button_padding,
           ),
-          font_size as u16
+          font_size as u16,
         ) {
           bird.reset();
           reset_pipes(&mut pipes);
