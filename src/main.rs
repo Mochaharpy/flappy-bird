@@ -2,9 +2,7 @@ use macroquad::{
   input::{
     KeyCode::{Space, Up, W},
     MouseButton::Left,
-  },
-  prelude::*,
-  rand::gen_range,
+  }, prelude::*, rand::gen_range,
 };
 
 const GAME_HEIGHT: f32 = 817.0;
@@ -131,9 +129,7 @@ impl Bird {
     self.y += self.vel_y * dt;
 
     // so the bird doesnt fly away
-    self.y = self
-      .y
-      .clamp(self.size / 2.0, GAME_HEIGHT - self.size / 2.0);
+    self.y = self.y.clamp(self.size / 2.0, GAME_HEIGHT - self.size / 2.0);
 
     // if bird hits top, set vel to 0 so it doesnt 'stick' to the ceil
     if self.y == self.size / 2.0 {
@@ -231,11 +227,12 @@ async fn main() {
   reset_pipes(&mut pipes);
 
   let mut state = GameState::StartMenu;
-let render_target = render_target(GAME_WIDTH as u32, GAME_HEIGHT as u32);
-render_target.texture.set_filter(FilterMode::Linear);
+  let render_target = render_target(GAME_WIDTH as u32, GAME_HEIGHT as u32);
+  render_target.texture.set_filter(FilterMode::Linear);
 
-let mut game_camera = Camera2D::from_display_rect(Rect::new(0.0, 0.0, GAME_WIDTH, GAME_HEIGHT));
-game_camera.render_target = Some(render_target.clone());
+  let mut game_camera = Camera2D::from_display_rect(Rect::new(0.0, 0.0, GAME_WIDTH, GAME_HEIGHT));
+  game_camera.render_target = Some(render_target.clone());
+  
   loop {
     set_camera(&game_camera);
     clear_background(SKYBLUE);
@@ -246,6 +243,9 @@ game_camera.render_target = Some(render_target.clone());
     bird.draw();
     draw_text(&format!("Score: {}", score), 20.0, 40.0, 36.0, WHITE);
     let delta_time = get_frame_time();
+    
+    draw_text(&format!("fps: {}", get_fps()), 20.0, 70.0, 36.0, WHITE);
+
     match state {
       GameState::StartMenu => {
         let font_size: f32 = 50.0;
@@ -321,22 +321,22 @@ game_camera.render_target = Some(render_target.clone());
       }
     }
     set_default_camera();
-clear_background(BLACK);
+    clear_background(BLACK);
 
-let scale = calculate_letterbox_scale();
-let offset = calculate_letterbox_offset();
-draw_texture_ex(
-  &render_target.texture,
-  offset.x,
-  offset.y,
-  WHITE,
-  DrawTextureParams {
-    dest_size: Some(vec2(GAME_WIDTH * scale, GAME_HEIGHT * scale)),
-    flip_y: true,
-    ..Default::default()
-  },
-);
+    let scale = calculate_letterbox_scale();
+    let offset = calculate_letterbox_offset();
+    draw_texture_ex(
+      &render_target.texture,
+      offset.x,
+      offset.y,
+      WHITE,
+      DrawTextureParams {
+        dest_size: Some(vec2(GAME_WIDTH * scale, GAME_HEIGHT * scale)),
+        flip_y: true,
+        ..Default::default()
+      },
+    );
 
-next_frame().await;
+    next_frame().await;
   }
 }
