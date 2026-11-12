@@ -30,6 +30,7 @@ struct Pipe {
   gap_size: f32,
   width: f32,
   speed: f32,
+  passed: bool,
 }
 
 impl Pipe {
@@ -40,11 +41,13 @@ impl Pipe {
       gap_size: PIPE_GAP_SIZE,
       width: PIPE_WIDTH,
       speed: PIPE_SPEED,
+      passed: false,
     }
   }
 
   fn recycle(&mut self, new_x: f32) {
     self.x = new_x;
+    self.passed = false;
     self.gap_center = gen_range(PIPE_GAP_SIZE, screen_height() - PIPE_GAP_SIZE)
   }
 
@@ -202,6 +205,7 @@ enum GameState {
 
 #[macroquad::main("FlappyBird")]
 async fn main() {
+  let mut score: u32 = 0;
   let pipe_count: usize = (screen_width() / PIPE_SPACING) as usize + 1;
   let mut bird = Bird::new();
   let mut pipes: Vec<Pipe> = (0..pipe_count).map(|_| Pipe::new(0.0)).collect();
@@ -211,11 +215,12 @@ async fn main() {
 
   loop {
     clear_background(SKYBLUE);
+
     for pipe in &pipes {
       pipe.draw();
     }
     bird.draw();
-
+draw_text(&format!("Score: {}", score), 20.0, 40.0, 36.0, WHITE);
     let delta_time = get_frame_time();
     match state {
       GameState::StartMenu => {
@@ -243,6 +248,11 @@ async fn main() {
         let hit_floor = bird.update(delta_time);
         for pipe in pipes.iter_mut() {
           pipe.update(delta_time);
+
+          if !pipe.passed && pipe.x + pipe.width < bird.x {
+            pipe.passed = true;
+            score = score + 1;
+          }
         }
 
         // if they are further then they should go, then they get 'recycled'
@@ -266,11 +276,11 @@ async fn main() {
 
       GameState::GameOver => {
         let font_size: f32 = 30.0;
-        let button_label: &str = "restart";
+        let button_label: &str = "Restart";
         let button_padding: f32 = 20.0;
         let button_size = measure_text(button_label, None, font_size as u16, 1.0);
         if draw_button(
-          "Restart",
+          button_label,
           Rect::new(
             center(0.0, screen_width(), button_size.width + button_padding),
             center(0.0, screen_height(), button_size.width + button_padding),
@@ -279,6 +289,7 @@ async fn main() {
           ),
           font_size as u16,
         ) {
+          score = 0;
           bird.reset();
           reset_pipes(&mut pipes);
           state = GameState::Playing;
