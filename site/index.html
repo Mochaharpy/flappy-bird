@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Flappy Bird</title>
+    <style>
+        html, body, canvas {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background: black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="glcanvas" tabindex="1"></canvas>
+    <script>
+        var register_plugin;
+        // Automatically focus the canvas so mouse/keyboard events register right away
+        window.onload = function() {
+            document.getElementById("glcanvas").focus();
+        };
+    </script>
+    <script src="mq_js_bundle.js"></script>
+    <script>load("flappy-bird.wasm");</script>
+</body>
+
+</html>

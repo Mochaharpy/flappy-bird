@@ -1,0 +1,5 @@
+[build]
+target = "wasm32-unknown-unknown"
+
+[alias]
+site = "build --release -Z unstable-options --artifact-dir site"
