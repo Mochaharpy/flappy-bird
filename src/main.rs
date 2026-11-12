@@ -14,7 +14,7 @@ const BIRD_SIZE: f32 = 20.0;
 const PIPE_SPACING: f32 = 200.0;
 const PIPE_WIDTH: f32 = 40.0;
 const PIPE_GAP_SIZE: f32 = 200.0;
-const PIPE_SPEED: f32 = 100.0;
+const PIPE_SPEED: f32 = 1000.0;
 
 // the player
 struct Bird {
