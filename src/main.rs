@@ -150,7 +150,7 @@ impl Bird {
   }
 }
 
-fn draw_button(label: &str, button_rect: Rect) -> bool {
+fn draw_button(label: &str, button_rect: Rect, font_size: u16) -> bool {
   let (mousex, mousey) = mouse_position();
   let is_hovered = button_rect.contains(vec2(mousex, mousey));
 
@@ -164,12 +164,12 @@ fn draw_button(label: &str, button_rect: Rect) -> bool {
     fill_color,
   );
 
-  let text_size = measure_text(label, None, 24, 1.0);
+  let text_size = measure_text(label, None, font_size, 1.0);
   draw_text(
     label,
     button_rect.x + (button_rect.w - text_size.width) / 2.0,
     button_rect.y + (button_rect.h + text_size.height) / 2.0,
-    24.0,
+    font_size as f32,
     WHITE,
   );
 
@@ -180,6 +180,10 @@ fn reset_pipes(pipes: &mut [Pipe]) {
   for (index, pipe) in pipes.iter_mut().enumerate() {
     pipe.recycle(screen_width() + index as f32 * PIPE_SPACING);
   }
+}
+
+fn center(start: f32, end: f32, size: f32) -> f32 {
+  (end + start) / 2.0 - (size / 2.0)
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -195,31 +199,49 @@ async fn main() {
   let mut bird = Bird::new();
   let mut pipes: Vec<Pipe> = (0..pipe_count).map(|_| Pipe::new(0.0)).collect();
   reset_pipes(&mut pipes);
+  // makes it so they start so much earlier!
+  for pipe in pipes.iter_mut() {
+    pipe.x -= screen_width() / 2.0
+  }
   let mut state = GameState::StartMenu;
+
   loop {
     clear_background(SKYBLUE);
+    for pipe in &pipes {
+      pipe.draw();
+    }
+    bird.draw();
+
     let delta_time = get_frame_time();
     match state {
       GameState::StartMenu => {
-        let font_size = 50.0;
-        let button_label = "Start";
+        let font_size: f32 = 50.0;
+        let button_label: &str = "Start";
         let button_padding: f32 = 20.0;
         let button_size = measure_text(button_label, None, font_size as u16, 1.0);
 
         if draw_button(
           "Start",
-          Rect::new(100.0, 100.0, button_size.width + button_padding, button_size.height + button_padding),
+          Rect::new(
+            center(0.0, screen_width(), button_size.width + button_padding),
+            center(0.0, screen_height(), button_size.height + button_padding),
+            button_size.width + button_padding,
+            button_size.height + button_padding,
+          ),
+          font_size as u16
         ) {
           state = GameState::Playing;
         }
       }
 
       GameState::Playing => {
+        // bird update returns a bool; when bool is true then it hit the floor
         let hit_floor = bird.update(delta_time);
         for pipe in pipes.iter_mut() {
           pipe.update(delta_time);
         }
 
+        // if they are further then they should go, then they get 'recycled'
         let furthest_x = pipes.iter().map(|pipe| pipe.x).fold(f32::MIN, f32::max);
         for pipe in pipes.iter_mut() {
           if pipe.x < -PIPE_WIDTH {
@@ -227,6 +249,7 @@ async fn main() {
           }
         }
 
+        // checks collisions between pipes and bird
         let bird_rect = bird.collision_box();
         let hit_pipe = pipes.iter().any(|pipe| {
           bird_rect.overlaps(&pipe.top_pipe()) || bird_rect.overlaps(&pipe.bottom_pipe())
@@ -235,22 +258,26 @@ async fn main() {
         if hit_floor || hit_pipe {
           state = GameState::GameOver;
         }
-
-        for pipe in pipes.iter() {
-          pipe.draw()
-        }
-
-        bird.draw();
       }
 
       GameState::GameOver => {
+        let font_size: f32 = 30.0;
+        let button_label: &str = "restart";
+        let button_padding: f32 = 20.0;
+        let button_size = measure_text(button_label, None, font_size as u16, 1.0);
         if draw_button(
           "Restart",
-          Rect::new(160.0, 50.0, screen_height() / 2.0 + 60.0, 60.0),
+          Rect::new(
+            center(0.0, screen_width(), button_size.width + button_padding),
+            center(0.0, screen_height(), button_size.width + button_padding),
+            button_size.width + button_padding,
+            button_size.height + button_padding,
+          ),
+          font_size as u16
         ) {
           bird.reset();
           reset_pipes(&mut pipes);
-          state = GameState::StartMenu;
+          state = GameState::Playing;
         }
       }
     }
