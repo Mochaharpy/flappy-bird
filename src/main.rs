@@ -1,6 +1,6 @@
 use macroquad::{
   input::{
-    KeyCode::{D, Space, Up, W},
+    KeyCode::{Space, Up, W},
     MouseButton::Left,
   },
   prelude::*,
@@ -185,7 +185,7 @@ fn draw_button(label: &str, button_rect: Rect, font_size: u16) -> bool {
 
 fn reset_pipes(pipes: &mut [Pipe]) {
   for (index, pipe) in pipes.iter_mut().enumerate() {
-    pipe.recycle(screen_width() + index as f32 * PIPE_SPACING);
+    pipe.recycle(screen_width() / 2.0 + index as f32 * PIPE_SPACING);
   }
 }
 
@@ -206,10 +206,7 @@ async fn main() {
   let mut bird = Bird::new();
   let mut pipes: Vec<Pipe> = (0..pipe_count).map(|_| Pipe::new(0.0)).collect();
   reset_pipes(&mut pipes);
-  // makes it so they start so much earlier!
-  for pipe in pipes.iter_mut() {
-    pipe.x -= screen_width() / 2.0
-  }
+
   let mut state = GameState::StartMenu;
 
   loop {
