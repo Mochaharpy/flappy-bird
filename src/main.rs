@@ -7,6 +7,9 @@ use macroquad::{
   rand::gen_range,
 };
 
+const GAME_HEIGHT: f32 = 817.0;
+const GAME_WIDTH: f32 = 1920.0;
+
 const GRAVITY: f32 = 1200.0;
 const BIRD_FLAP_FORCE: f32 = 400.0;
 const BIRD_SIZE: f32 = 20.0;
@@ -36,7 +39,7 @@ struct Pipe {
 impl Pipe {
   fn new(gap_center: f32) -> Self {
     Self {
-      x: screen_width() + PIPE_WIDTH,
+      x: GAME_WIDTH + PIPE_WIDTH,
       gap_center,
       gap_size: PIPE_GAP_SIZE,
       width: PIPE_WIDTH,
@@ -48,7 +51,7 @@ impl Pipe {
   fn recycle(&mut self, new_x: f32) {
     self.x = new_x;
     self.passed = false;
-    self.gap_center = gen_range(PIPE_GAP_SIZE, screen_height() - PIPE_GAP_SIZE)
+    self.gap_center = gen_range(PIPE_GAP_SIZE, GAME_HEIGHT - PIPE_GAP_SIZE)
   }
 
   fn top_pipe(&self) -> Rect {
@@ -66,7 +69,7 @@ impl Pipe {
       self.x,
       top_of_bottom_pipe,
       self.width,
-      screen_height() - top_of_bottom_pipe,
+      GAME_HEIGHT - top_of_bottom_pipe,
     )
   }
 
@@ -93,7 +96,7 @@ impl Bird {
   fn new() -> Self {
     Self {
       x: 150.0,
-      y: screen_height() / 2.0,
+      y: GAME_HEIGHT / 2.0,
       vel_y: 0.0,
       size: BIRD_SIZE,
     }
@@ -101,7 +104,7 @@ impl Bird {
 
   fn reset(&mut self) {
     self.x = 150.0;
-    self.y = screen_height() / 2.0;
+    self.y = GAME_HEIGHT / 2.0;
     self.vel_y = 0.0;
   }
 
@@ -130,12 +133,12 @@ impl Bird {
     // so the bird doesnt fly away
     self.y = self
       .y
-      .clamp(self.size / 2.0, screen_height() - self.size / 2.0);
+      .clamp(self.size / 2.0, GAME_HEIGHT - self.size / 2.0);
 
     // if bird hits top, set vel to 0 so it doesnt 'stick' to the ceil
     if self.y == self.size / 2.0 {
       self.vel_y = 0.0;
-    } else if self.y == screen_height() - self.size / 2.0 {
+    } else if self.y == GAME_HEIGHT - self.size / 2.0 {
       return true;
     }
     false
@@ -160,9 +163,25 @@ impl Bird {
   }
 }
 
+fn calculate_letterbox_scale() -> f32 {
+  (screen_width() / GAME_WIDTH).min(screen_height() / GAME_HEIGHT)
+}
+
+fn calculate_letterbox_offset() -> Vec2 {
+  let scale = calculate_letterbox_scale();
+  vec2(
+    (screen_width() - GAME_WIDTH * scale) / 2.0,
+    (screen_height() - GAME_HEIGHT * scale) / 2.0,
+  )
+}
+
+fn game_mouse_position() -> Vec2 {
+  let (mouse_x, mouse_y) = mouse_position();
+  (vec2(mouse_x, mouse_y) - calculate_letterbox_offset()) / calculate_letterbox_scale()
+}
+
 fn draw_button(label: &str, button_rect: Rect, font_size: u16) -> bool {
-  let (mousex, mousey) = mouse_position();
-  let is_hovered = button_rect.contains(vec2(mousex, mousey));
+  let is_hovered = button_rect.contains(game_mouse_position());
 
   let fill_color = if is_hovered { DARKGRAY } else { GRAY };
 
@@ -188,7 +207,7 @@ fn draw_button(label: &str, button_rect: Rect, font_size: u16) -> bool {
 
 fn reset_pipes(pipes: &mut [Pipe]) {
   for (index, pipe) in pipes.iter_mut().enumerate() {
-    pipe.recycle(screen_width() / 2.0 + index as f32 * PIPE_SPACING);
+    pipe.recycle(GAME_WIDTH / 2.0 + index as f32 * PIPE_SPACING);
   }
 }
 
@@ -206,21 +225,26 @@ enum GameState {
 #[macroquad::main("FlappyBird")]
 async fn main() {
   let mut score: u32 = 0;
-  let pipe_count: usize = (screen_width() / PIPE_SPACING) as usize + 1;
+  let pipe_count: usize = (GAME_WIDTH / PIPE_SPACING) as usize + 1;
   let mut bird = Bird::new();
   let mut pipes: Vec<Pipe> = (0..pipe_count).map(|_| Pipe::new(0.0)).collect();
   reset_pipes(&mut pipes);
 
   let mut state = GameState::StartMenu;
+let render_target = render_target(GAME_WIDTH as u32, GAME_HEIGHT as u32);
+render_target.texture.set_filter(FilterMode::Linear);
 
+let mut game_camera = Camera2D::from_display_rect(Rect::new(0.0, 0.0, GAME_WIDTH, GAME_HEIGHT));
+game_camera.render_target = Some(render_target.clone());
   loop {
+    set_camera(&game_camera);
     clear_background(SKYBLUE);
 
     for pipe in &pipes {
       pipe.draw();
     }
     bird.draw();
-draw_text(&format!("Score: {}", score), 20.0, 40.0, 36.0, WHITE);
+    draw_text(&format!("Score: {}", score), 20.0, 40.0, 36.0, WHITE);
     let delta_time = get_frame_time();
     match state {
       GameState::StartMenu => {
@@ -232,8 +256,8 @@ draw_text(&format!("Score: {}", score), 20.0, 40.0, 36.0, WHITE);
         if draw_button(
           "Start",
           Rect::new(
-            center(0.0, screen_width(), button_size.width + button_padding),
-            center(0.0, screen_height(), button_size.height + button_padding),
+            center(0.0, GAME_WIDTH, button_size.width + button_padding),
+            center(0.0, GAME_HEIGHT, button_size.height + button_padding),
             button_size.width + button_padding,
             button_size.height + button_padding,
           ),
@@ -282,8 +306,8 @@ draw_text(&format!("Score: {}", score), 20.0, 40.0, 36.0, WHITE);
         if draw_button(
           button_label,
           Rect::new(
-            center(0.0, screen_width(), button_size.width + button_padding),
-            center(0.0, screen_height(), button_size.width + button_padding),
+            center(0.0, GAME_WIDTH, button_size.width + button_padding),
+            center(0.0, GAME_HEIGHT, button_size.width + button_padding),
             button_size.width + button_padding,
             button_size.height + button_padding,
           ),
@@ -296,6 +320,23 @@ draw_text(&format!("Score: {}", score), 20.0, 40.0, 36.0, WHITE);
         }
       }
     }
-    next_frame().await;
+    set_default_camera();
+clear_background(BLACK);
+
+let scale = calculate_letterbox_scale();
+let offset = calculate_letterbox_offset();
+draw_texture_ex(
+  &render_target.texture,
+  offset.x,
+  offset.y,
+  WHITE,
+  DrawTextureParams {
+    dest_size: Some(vec2(GAME_WIDTH * scale, GAME_HEIGHT * scale)),
+    flip_y: true,
+    ..Default::default()
+  },
+);
+
+next_frame().await;
   }
 }
